@@ -1,0 +1,179 @@
+* lmntal-mode
+
+An LMNtal development environment for Emacs
+
+Emacs 用の LMNtal 開発環境
+
+** Features
+
+=lmntal-mode.el= provides two major modes :
+
+- =lmntal-mode= for editing LMNtal programs (=.lmn=)
+- =lmntal-slimcode-mode= for editing LMNtal intermediate codes (=.il=)
+
+which offer :
+
+- Automatic indentation
+- Blink matching links (only for =lmntal-mode=)
+- Keyword highlighting
+- Bunch of utility commands
+- =imenu= support
+- =eldoc= support (only for =lmntal-slimcode-mode=)
+
+-----
+
+=lmntal-mode.el= は２つのメジャーモードを提供します：
+
+- LMNtal プログラムを編集するための =lmntal-mode=
+- LMNtal 中間コードを編集するための =lmntal-slimcode-mode=
+
+それぞれのモードには次の機能があります：
+
+- 自動インデント
+- 対応するリンク名のハイライト (=lmntal-mode= のみ)
+- シンタックスハイライト
+- 便利なコマンド
+- =imenu= に対応
+- =eldoc= に対応 (=lmntal-slimcode-mode= のみ)
+
+** Installation
+
+Load this script
+
+#+begin_src emacs-lisp
+  (require 'lmntal-mode)
+#+end_src
+
+and =lmntal-mode= (=lmntal-slimcode-mode=) is automatically enabled
+when opening =.lmn= (=.il=) files.
+
+You can also manually turn the mode on with =M-x lmntal-mode=
+(=lmntal-slimcode-mode=).
+
+-----
+
+このスクリプトをロードすると、
+
+#+begin_src emacs-lisp
+  (require 'lmntal-mode)
+#+end_src
+
+=.lmn= (=.il=) ファイルを開いた時、自動的に =lmntal-mode=
+(=lmntal-slimcode-mode=) が設定されます。
+
+=M-x lmntal-mode= (=lmntal-slimcode-mode=) で手動でメジャーモードを設定
+することもできます。
+
+** Keybinds
+
+- Use =[C-M-a]= / =[C-M-e]= to jump to the beginning / end of rule
+- Use =[C-c C-c]= to run LMNtal program and see the trace
+- Use =[C-c C-m]= to run LMNtal program in non-deterministic mode
+- Use =[C-c C-i]= to compile LMNtal program to see the VM code
+
+See also: section "LMNtal installation directory".
+
+-----
+
+- =[C-M-a]= (=[C-M-e]=) でルールの先頭 (末尾) にジャンプします
+- =[C-c C-c]= で LMNtal プログラムを実行しトレースを表示します
+- =[C-c C-m]= で LMNtal プログラムを非決定モードで実行します
+- =[C-c C-i]= で LMNtal プログラムをコンパイルし中間コードを表示します
+
+"LMNtal installation directory" の項も併せて読んでください。
+
+** Customization
+*** LMNtal installation directory
+
+You may optionally setup LMNtal installation directory so that you
+can run LMNtal programs within Emacs.
+
+#+begin_src emacs-lisp
+  (setq lmntal-home-directory  "~/LMNtal/LaViT2_6_2/lmntal/"
+        lmntal-slim-executable "installed/bin/slim")
+#+end_src
+
+If you've set =LMNTAL_HOME= environment variable properly,
+=lmntal-home-directory= can be omitted. The directory must contain a
+directory named =bin= with LMNtal compiler in it.
+
+=lmntal-slim-executable= may be either a full path or relative path
+from =lmntal-mode-directory=.
+
+-----
+
+Emacs 内から LMNtal プログラムを実行するために、 LMNtal のインストール
+ディレクトリを設定することができます。
+
+#+begin_src emacs-lisp
+  (setq lmntal-home-directory  "~/LMNtal/LaViT2_6_2/lmntal/"
+        lmntal-slim-executable "installed/bin/slim")
+#+end_src
+
+=lmntal-home-directory= は、もしも環境変数 =LMNTAL_HOME= がすでに適切に
+設定されていれば設定を省略できます。 =lmntal-home-directory= 以下
+=bin= ディレクトリに LMNtal コンパイラの実行ファイルが配置されている必
+要があります。
+
+=lmntal-slim-executable= はフルパスでも、 =lmntal-home-directory= から
+の相対パスでもかまいません。
+
+*** LMNtal compiler / VM options
+
+You may optionally set options for LMNtal compilers and / or SLIM
+virtual machine.
+
+#+begin_src emacs-lisp
+  (setq lmntal-compile-options '("--slimcode" "--hl")
+        lmntal-runtime-options '("-t" "--hl" "--use-builtin-rule")
+        lmntal-mc-options      '("--nd" "-t" "--hl" "--use-builtin-rule"))
+#+end_src
+
+-----
+
+LMNtal コンパイラおよび SLIM VM に渡す実行オプションを設定することがで
+きます。
+
+#+begin_src emacs-lisp
+  (setq lmntal-compile-options '("--slimcode" "--hl")
+        lmntal-runtime-options '("-t" "--hl" "--use-builtin-rule")
+        lmntal-mc-options      '("--nd" "-t" "--hl" "--use-builtin-rule"))
+#+end_src
+
+*** Graphviz integration
+
+You may optionally install graphviz and set =lmntal-mc-use-dot=
+non-nil to render reduction graphs with graphviz.
+
+#+begin_src emacs-lisp
+  (setq lmntal-mc-use-dot t)
+#+end_src
+
+-----
+
+Graphviz をインストールし =lmntal-mc-use-dot= を非 =nil= に設定すると、
+リダクショングラフが Graphviz で描画されます。
+
+#+begin_src emacs-lisp
+  (setq lmntal-mc-use-dot t)
+#+end_src
+
+*** Theming
+
+You may optionally modify =lmntal-link-name-face= and / or
+=lmntal-highlight-face= so that they look better in your colorscheme.
+
+#+begin_src emacs-lisp
+  (set-face-background 'lmntal-link-name-face "#003944")
+  (set-face-foreground 'lmntal-highlight-face "#d06466")
+#+end_src
+
+-----
+
+=lmntal-link-name-face= および =lmntal-highlight-face= はお使いのカ
+ラースキームに合わせて変更できます。
+
+#+begin_src emacs-lisp
+  (set-face-background 'lmntal-link-name-face "#003944")
+  (set-face-foreground 'lmntal-highlight-face "#d06466")
+#+end_src
