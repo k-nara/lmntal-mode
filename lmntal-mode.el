@@ -1,6 +1,6 @@
 ;;; lmntal-mode.el --- An LMNtal development environment
 
-;; Copyright (C) 2013-2015 Kota Nara, Ueda Lab. LMNtal Group
+;; Copyright (C) 2013 Ueda Lab. LMNtal Group
 
 ;; Redistribution and use in source and binary forms, with or without
 ;; modification, are permitted provided that the following conditions are
@@ -30,9 +30,10 @@
 ;; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-;; Author: Kota Nara, Ueda Lab. LMNtal Group
+;; Author: Kota Nara
+;; Maintainer: Kota Nara
 ;; URL: http://www.ueda.info.waseda.ac.jp/lmntal/
-;; Version: 20150327
+;; Version: 20150329
 
 ;;; Commentary:
 
@@ -68,6 +69,7 @@
 ;;          '.' をルール末尾のピリオドと勘違いしてしまう不具合を修正
 ;; 20150321 `lmntal-slimcode--help-table' を同梱
 ;; 20150327 他の LMNtal 関連プロジェクトに合わせてライセンスを変更
+;; 20150329 `lmntal-link-name-face` のデフォルト色を白背景のテーマに対応
 
 ;;; Code:
 
@@ -77,7 +79,7 @@
 (require 'electric)                 ; electric-indent, electric-layout
 (require 'cl-lib)                   ; destructuring-bind
 
-(defconst lmntal-mode-version "20150327")
+(defconst lmntal-mode-version "20150329")
 
 ;; + customs
 
@@ -177,7 +179,8 @@ path from \"lmntal-home-directory\")"
   :group 'lmntal)
 
 (defface lmntal-link-name-face
-  '((t (:background "#003944")))
+  '((((background dark)) (:background "#003944"))
+    (t (:background "#f8f6f1")))
   "face used for LMNtal link/context names"
   :group 'lmntal)
 
@@ -450,7 +453,7 @@ if not found, return nil."
                     (remove-overlays
                      (cadr tmp) (nth 4 tmp) 'category 'lmntal)))))))))))
 
-;; + interactive jump commands
+;; + jump commands
 
 (defun lmntal-beginning-of-rule (&optional arg)
   (interactive "P")
@@ -480,7 +483,7 @@ if not found, return nil."
           (goto-char pos)
           (error "no rules found"))))))
 
-;; + run LMNtal from Emacs
+;; + run LMNtal within Emacs
 ;;   + utilities
 
 (defvar lmntal--output-window nil)
@@ -1191,6 +1194,8 @@ behavior in lmntal-slimcde-mode.")
     (back-to-indentation)
     (when (looking-at "[a-z]+")
       (cadr (gethash (match-string 0) lmntal-slimcode--help-table nil)))))
+
+;; the mode
 
 ;;;###autoload
 (define-derived-mode lmntal-slimcode-mode prog-mode "SLIMcode"
