@@ -194,10 +194,10 @@ path from \"lmntal-home-directory\")"
 (defvar lmntal-syntax-table
   (let ((st (make-syntax-table)))
     ;; symbol
-    (modify-syntax-entry ?! "_" st)
-    (modify-syntax-entry ?$ "_" st)
-    (modify-syntax-entry ?@ "_" st)
-    (modify-syntax-entry ?* "_ 23" st)
+    (modify-syntax-entry ?! "_" st)     ; hyperlinks
+    (modify-syntax-entry ?$ "_" st)     ; process contexts
+    (modify-syntax-entry ?@ "_" st)     ; rule contexts
+    (modify-syntax-entry ?* "_ 23" st)  ; link-bundles
     ;; punct
     (modify-syntax-entry ?: "." st)
     (modify-syntax-entry ?. "." st)
@@ -228,78 +228,51 @@ path from \"lmntal-home-directory\")"
   "syntax table for LMNtal mode")
 
 ;; + utility functions
-;;   + comment parser
+;;   + comment recognizer
 
-(defun lmntal--parse-comment (&optional diff)
-  "(for internal use only)"
-  (save-excursion
-    (and (or (null diff)
-             (ignore-errors (forward-char diff) t))
-         (nth 4 (syntax-ppss)))))
-
-;; vvv *FIXME* BAD IMPLEMENTATION
 (defun lmntal--in-comment-p ()
-  "return if the point is inside, or boundary of a comment"
-  (or (lmntal--parse-comment)
-      (lmntal--parse-comment +1)
+  "return if the point is inside a comment (inclusive)."
+  (or (nth 4 (syntax-ppss))
+      (and (not (eobp))
+           (save-excursion
+             (nth 4 (syntax-ppss (1+ (point))))))
+      ;; *FIXME* FALSE-POSITIVE
       (looking-back "\\*/")
       (looking-at "/\\(?:/\\|\\*\\)")))
 
 (defun lmntal--in-string-p ()
-  "return if the point is inside of a string."
+  "return if the point is inside of a string (exclusive)."
   (nth 3 (syntax-ppss)))
 
-(defun lmntal--skip-comments-backward ()
+(defun lmntal--beginning-of-comment ()
   "go to the beginning of THIS comment.
 if nothing happened, return nil. otherwise return t"
-  (when (and (lmntal--in-comment-p)
-             (not (bobp)))
-    (while (save-excursion
-             (and (ignore-errors (forward-char -1) t)
+  (when (and (lmntal--in-comment-p) (not (bobp)))
+    (while (and (not (bobp))
+                (save-excursion
+                  (forward-char -1)
                   (lmntal--in-comment-p)))
       (forward-char -1))
     t))
 
-(defun lmntal--skip-comments-forward ()
+(defun lmntal--end-of-comment ()
   "go to the end of THIS comment.
 if nothing happened, return nil. otherwise return t"
-  (when (and (lmntal--in-comment-p)
-             (not (eobp)))
-    (while (save-excursion
-             (and (ignore-errors (forward-char 1) t)
+  (when (and (lmntal--in-comment-p) (not (eobp)))
+    (while (and (not (eobp))
+                (save-excursion
+                  (forward-char 1)
                   (lmntal--in-comment-p)))
       (forward-char 1))
     t))
 
-;;   + lexer (for internal use)
-
-(defun lmntal--go-backward ()
-  "go backward skipping sexps and comments.
-if succeeded, return t. otherwise return nil.
-   bar  : -  foo  (bar)  /*baz*/  qux .|
-   bar  : -  foo  (bar)  /*baz*/  baz|.
-   bar  : -  foo  (bar)  /*baz*/| baz .
-   bar  : -  foo  (bar)| /*baz*/  baz .
-   bar  : -  foo| (bar)  /*baz*/  baz .
-   bar  : -| foo  (bar)  /*baz*/  baz .
-   bar  :|-  foo  (bar)  /*baz*/  baz .
-   bar| : -  foo  (bar)  /*baz*/  baz .
-  |bar  : -  foo  (bar)  /*baz*/  baz .
-  |bar  : -  foo  (bar)  /*baz*/  baz . (nil)"
-  (unless (or (bobp)
-              (member (char-before) '(?\( ?\[ ?\{)))
-    (cond ((lmntal--in-comment-p)
-           (lmntal--skip-comments-backward))
-          ((or (member (char-before) '(?\) ?\] ?\}))
-               (looking-back "\\_>"))
-           (backward-sexp))
-          (t
-           (forward-char -1)))
-    (skip-chars-backward "\s\t\n")))
+;;   + jumping around (for internal use)
 
 (defun lmntal--go-forward ()
-  "go forward skipping sexps and comments.
-if succeeded return t. otherwise return nil.
+  "when looking at either a comment, list, identifier or
+ character except for ])}, jump forward over it and skip
+ following spaces then return non-nil. otherwise just return nil.
+
   |bar  : -  foo  (bar)  /*baz*/  baz .
    bar |: -  foo  (bar)  /*baz*/  baz .
    bar  :|-  foo  (bar)  /*baz*/  baz .
@@ -310,20 +283,42 @@ if succeeded return t. otherwise return nil.
    bar  : -  foo  (bar)  /*baz*/  baz|.
    bar  : -  foo  (bar)  /*baz*/  baz .|
    bar  : -  foo  (bar)  /*baz*/  baz .| (nil)"
-  (unless (or (eobp)
-              (member (char-after) '(?\) ?\] ?\})))
+  (unless (or (eobp) (memql (char-after) '(?\) ?\] ?\})))
     (cond ((lmntal--in-comment-p)
-           (lmntal--skip-comments-forward))
-          ((or (member (char-after) '(?\( ?\[ ?\{))
-               (looking-at "\\_<"))
+           (lmntal--end-of-comment))
+          ((or (memql (char-after) '(?\( ?\[ ?\{)) (looking-at "\\_<"))
            (forward-sexp))
           (t
            (forward-char 1)))
     (skip-chars-forward "\s\t\n")))
 
+(defun lmntal--go-backward ()
+  "when looking back either a comment, list, identifier or
+ character except for [({, jump backward over it and skip
+ preceding spaces then return non-nil. otherwise just return nil.
+
+   bar  : -  foo  (bar)  /*baz*/  qux .|
+   bar  : -  foo  (bar)  /*baz*/  baz|.
+   bar  : -  foo  (bar)  /*baz*/| baz .
+   bar  : -  foo  (bar)| /*baz*/  baz .
+   bar  : -  foo| (bar)  /*baz*/  baz .
+   bar  : -| foo  (bar)  /*baz*/  baz .
+   bar  :|-  foo  (bar)  /*baz*/  baz .
+   bar| : -  foo  (bar)  /*baz*/  baz .
+  |bar  : -  foo  (bar)  /*baz*/  baz .
+  |bar  : -  foo  (bar)  /*baz*/  baz . (nil)"
+  (unless (or (bobp) (memql (char-before) '(?\( ?\[ ?\{)))
+    (cond ((lmntal--in-comment-p)
+           (lmntal--beginning-of-comment))
+          ((or (memql (char-before) '(?\) ?\] ?\})) (looking-back "\\_>"))
+           (backward-sexp))
+          (t
+           (forward-char -1)))
+    (skip-chars-backward "\s\t\n")))
+
 (defun lmntal--search-forward (regex)
-  "search regexp forward via lmntal--go-forward.
-if succeeded return t. otherwise return nil."
+  "search regexp forward via `lmntal--go-forward'.
+return non-nil iff succeeded."
   (when (or (not (zerop (skip-chars-forward "\s\t\n")))
             (lmntal--go-forward))
     (while (and (not (looking-at regex))
@@ -331,8 +326,8 @@ if succeeded return t. otherwise return nil."
     (looking-at regex)))
 
 (defun lmntal--search-backward (regex)
-  "search regexp backward via lmntal--go-backward
-if succeeded return t. otherwise return nil."
+  "search regexp backward via `lmntal--go-backward'.
+return non-nil iff succeeded."
   (when (or (not (zerop (skip-chars-backward "\s\t\n")))
             (lmntal--go-backward))
     (while (and (not (looking-back regex))
@@ -342,51 +337,48 @@ if succeeded return t. otherwise return nil."
 ;;   + rule parser
 
 (defun lmntal--syntax-info ()
-  "return (BEG-OF-ANNOT BEG-OF-STMT BEG-OF-GUARD BEG-OF-RHS
-END-OF-STMT) or nil."
-  (let (annot beg rhs guard end)
+  "return (BEG-OF-ANNOTATION BEG-OF-LHS BEG-OF-GUARD BEG-OF-RHS
+END-OF-RHS) of statement at the point, or nil on parse-error."
+  (let (annot lhs rhs guard end)
     (save-excursion
-      ;; annot
+      ;; annotation
       (while (and (lmntal--search-backward "\\(\\.\\|@@\\)")
-                  (or (looking-at "[a-z]") ; module prefix (like 'mymodule.hoge')
-                      (lmntal--in-string-p))))
+                  ;; module prefix (like 'mymodule.hoge')
+                  (or (looking-at "[a-z]") (lmntal--in-string-p))))
       (when (looking-back "[_a-z0-9]+@@" nil t)
         (setq annot (match-beginning 0)))
       (while (and (skip-chars-forward "\s\t\n")
-                  (lmntal--skip-comments-forward)))
+                  (lmntal--end-of-comment)))
       (unless (or (eobp) (looking-at "[)}]"))
-        (setq beg (point))
+        (setq lhs (point))
         ;; guard
         (while (and (lmntal--search-forward "\\(\\.\\|:-\\)")
-                    (or (looking-at "\\.[a-z]")
-                        (lmntal--in-string-p))))
+                    (or (looking-at "\\.[a-z]") (lmntal--in-string-p))))
         (if (not (looking-at ":-"))
             ;; this process is not a rule
-            `(,annot ,beg nil nil ,(1+ (point)))
+            `(,annot ,lhs nil nil ,(1+ (point)))
           (forward-char 2)
           (while (and (skip-chars-forward "\s\t\n")
-                      (lmntal--skip-comments-forward)))
+                      (lmntal--end-of-comment)))
           (setq guard (point))
           (when (or (looking-at "[^.]\\|$") (lmntal--in-string-p))
-            ;; search for end-of-guard
+            ;; search for end of the guard or rule
             (while (and (lmntal--search-forward "\\(\\.\\||\\)")
-                        (or (looking-at "\\.[a-z]")
-                            (lmntal--in-string-p)))))
+                        (or (looking-at "\\.[a-z]") (lmntal--in-string-p)))))
           (if (not (looking-at "|"))
               ;; this rule does not have a guard
-              `(,annot ,beg nil ,guard ,(1+ (point)))
+              `(,annot ,lhs nil ,guard ,(1+ (point)))
             (forward-char 1)
             (while (and (skip-chars-forward "\s\t\n")
-                        (lmntal--skip-comments-forward)))
+                        (lmntal--end-of-comment)))
             (setq rhs (point))
             ;; end of stmt
             (while (and (lmntal--search-forward "\\.")
-                        (or (looking-at "\\.[a-z]")
-                            (lmntal--in-string-p))))
-            `(,annot ,beg ,guard ,rhs ,(1+ (point)))))))))
+                        (or (looking-at "\\.[a-z]") (lmntal--in-string-p))))
+            `(,annot ,lhs ,guard ,rhs ,(1+ (point)))))))))
 
 (defun lmntal--this-rule-info ()
-  "like lmntal--syntax-info, but if the statement has no RHS,
+  "like `lmntal--syntax-info', but if the statement has no RHS,
 search parent recursively."
   (let* ((info (lmntal--syntax-info)))
     (cond ((null info) nil)
@@ -403,7 +395,7 @@ search parent recursively."
 
 (defun lmntal--last-noncomment-char ()
   "search for the last char, which is not a whitespace nor inside comment.
-if not found, return nil."
+return nil if not found."
   (save-excursion
     (while (and (lmntal--go-backward) (lmntal--in-comment-p)))
     (unless (bobp)
@@ -414,7 +406,8 @@ if not found, return nil."
 (defvar lmntal--highlight-overlay nil)
 (make-variable-buffer-local 'lmntal--highlight-overlay)
 
-(defsubst lmntal--on-linkname-p (&optional pos)
+(defsubst lmntal--in-linkname-p (&optional pos)
+  "return non-nil if POS is inside a link-name."
   (ignore-errors
     (eq 'lmntal-link-name-face
         (get-text-property (or pos (point)) 'face))))
@@ -422,33 +415,32 @@ if not found, return nil."
 (defun lmntal--highlight-update ()
   (mapc 'delete-overlay lmntal--highlight-overlay)
   (setq lmntal--highlight-overlay nil)
-  (when lmntal-enable-link-highlight
-    (when (or (lmntal--on-linkname-p)
-              (lmntal--on-linkname-p (1- (point))))
-      (save-excursion
-        (let ((info (lmntal--this-rule-info))
-              (str (thing-at-point 'symbol))
-              (case-fold-search nil))
-          (when (and info str)
-            (let ((beg (or (car info) (cadr info)))
-                  (rhs (nth 3 info))
-                  (limit (nth 4 info))
-                  (rx (regexp-opt (list str) 'symbols))
-                  tmp)
-              ;; make highlights
-              (goto-char beg)
-              (while (search-forward-regexp rx limit t)
-                (push (make-overlay (match-beginning 0) (match-end 0))
-                      lmntal--highlight-overlay))
-              (mapc (lambda (ov)
-                      (overlay-put ov 'category 'lmntal)
-                      (overlay-put ov 'face 'lmntal-highlight-face))
-                    lmntal--highlight-overlay)
-              ;; process nested rules
-              (when rhs
-                (goto-char rhs)
-                (while (search-forward ":-" limit t)
-                  (setq tmp (lmntal--this-rule-info))
+  (when (and lmntal-enable-link-highlight
+             (or (lmntal--in-linkname-p)
+                 (lmntal--in-linkname-p (1- (point)))))
+    (save-excursion
+      (let ((info (lmntal--this-rule-info))
+            (str (thing-at-point 'symbol))
+            (case-fold-search nil))
+        (when (and info str)
+          (let ((beg (or (car info) (cadr info)))
+                (rhs (nth 3 info))
+                (limit (nth 4 info))
+                (rx (regexp-quote str)))
+            ;; make highlights
+            (goto-char beg)
+            (while (search-forward-regexp rx limit t)
+              (push (make-overlay (match-beginning 0) (match-end 0))
+                    lmntal--highlight-overlay))
+            (mapc (lambda (ov)
+                    (overlay-put ov 'category 'lmntal)
+                    (overlay-put ov 'face 'lmntal-highlight-face))
+                  lmntal--highlight-overlay)
+            ;; process nested rules
+            (when rhs
+              (goto-char rhs)
+              (while (search-forward ":-" limit t)
+                (let ((tmp (lmntal--this-rule-info)))
                   (when tmp
                     (remove-overlays
                      (cadr tmp) (nth 4 tmp) 'category 'lmntal)))))))))))
@@ -456,28 +448,28 @@ if not found, return nil."
 ;; + jump commands
 
 (defun lmntal-beginning-of-rule (&optional arg)
+  "move backward to the beginning of rule at point."
   (interactive "P")
   (dotimes (_ (or arg 1))
     (let ((pos (point)))
       (lmntal--go-backward)
-      (while (lmntal--skip-comments-backward)
+      (while (lmntal--beginning-of-comment)
         (skip-chars-backward "\s\t\n"))
-      (let ((info (unless (bobp)
-                    (lmntal--this-rule-info))))
+      (let ((info (unless (bobp) (lmntal--this-rule-info))))
         (if info
             (goto-char (or (car info) (cadr info)))
           (goto-char pos)
           (error "no rules found"))))))
 
 (defun lmntal-end-of-rule (&optional arg)
+  "move forward to the end of rule at point."
   (interactive "P")
   (dotimes (_ (or arg 1))
     (let ((pos (point)))
       (lmntal--go-forward)
-      (while (lmntal--skip-comments-forward)
+      (while (lmntal--end-of-comment)
         (skip-chars-forward "\s\t\n"))
-      (let ((info (unless (eobp)
-                    (lmntal--this-rule-info))))
+      (let ((info (unless (eobp) (lmntal--this-rule-info))))
         (if info
             (goto-char (nth 4 info))
           (goto-char pos)
@@ -489,10 +481,9 @@ if not found, return nil."
 (defvar lmntal--output-window nil)
 (defvar lmntal--output-buffer nil)
 
-(defun lmntal--make-output-buffer ()
+(defun lmntal--prepare-output-buffer ()
   (or (buffer-live-p lmntal--output-buffer)
-      (setq lmntal--output-buffer
-            (get-buffer-create "*LMNtal Output*")))
+      (setq lmntal--output-buffer (get-buffer-create "*LMNtal Output*")))
   (or (window-live-p lmntal--output-window)
       (setq lmntal--output-window
             (split-window-vertically
@@ -502,7 +493,8 @@ if not found, return nil."
 (defun lmntal-output-exit ()
   "close this output window"
   (interactive)
-  (if (use-region-p) (keyboard-quit)
+  (if (use-region-p)
+      (keyboard-quit)
     (select-window (previous-window))
     (when (window-live-p lmntal--output-window)
       (delete-window lmntal--output-window))
@@ -510,17 +502,19 @@ if not found, return nil."
       (kill-buffer lmntal--output-buffer))))
 
 (defvar lmntal--temp-files nil)
-(defun lmntal--make-temp-file (&optional content)
+(defun lmntal--make-temp-file (&optional with-content)
+  "make and return a temporary file. the file will be deleted
+when emacs is killed. when WITH-CONTENT is non-nil, write either
+region or whole buffer to the file."
   (let ((file (make-temp-file "lmntal_" nil)))
-    (setq lmntal--temp-files (cons file lmntal--temp-files))
-    (when content
+    (push file lmntal--temp-files)
+    (when with-content
       (if (use-region-p)
           (write-region (region-beginning) (region-end) file)
         (write-region (point-min) (point-max) file)))
     file))
 
-(add-hook 'kill-emacs-hook
-          (lambda () (mapc 'delete-file lmntal--temp-files)))
+(add-hook 'kill-emacs-hook (lambda () (mapc 'delete-file lmntal--temp-files)))
 
 ;;   + run .lmn
 
@@ -546,7 +540,7 @@ if not found, return nil."
   (interactive)
   (when (not lmntal-home-directory)
     (error "specify lmntal-home-directory"))
-  (lmntal--make-output-buffer)
+  (lmntal--prepare-output-buffer)
   (let* ((file (lmntal--make-temp-file t))
          (default-directory lmntal-home-directory)
          (command
@@ -570,7 +564,7 @@ if not found, return nil."
   (interactive)
   (when (not lmntal-home-directory)
     (error "specify lmntal-home-directory"))
-  (lmntal--make-output-buffer)
+  (lmntal--prepare-output-buffer)
   (let* ((file (lmntal--make-temp-file t))
          (outfile (lmntal--make-temp-file nil))
          (default-directory lmntal-home-directory)
@@ -613,7 +607,7 @@ if not found, return nil."
   (interactive)
   (when (not lmntal-home-directory)
     (error "specify lmntal-home-directory"))
-  (lmntal--make-output-buffer)
+  (lmntal--prepare-output-buffer)
   (let ((file (lmntal--make-temp-file t))
         (buf (get-buffer-create (concat (buffer-name) "-SLIMcode"))))
     (switch-to-buffer buf)
@@ -641,7 +635,7 @@ if not found, return nil."
   (interactive)
   (when (not lmntal-home-directory)
     (error "specify lmntal-home-directory"))
-  (lmntal--make-output-buffer)
+  (lmntal--prepare-output-buffer)
   (let* ((file (lmntal--make-temp-file t))
          (default-directory lmntal-home-directory)
          (command
@@ -659,7 +653,7 @@ if not found, return nil."
   (interactive)
   (when (not lmntal-home-directory)
     (error "specify lmntal-home-directory"))
-  (lmntal--make-output-buffer)
+  (lmntal--prepare-output-buffer)
   (let* ((file (lmntal--make-temp-file t))
          (default-directory lmntal-home-directory)
          (command
@@ -730,7 +724,7 @@ if not found, return nil."
           ;;   -> same column as opening "/*"
           (progn
             (unless silent (message "indent: mcomment end"))
-            (lmntal--skip-comments-backward)
+            (lmntal--beginning-of-comment)
             (lmntal--calculate-indent t))
         ;; not the end of multi-line comment
         (if (not (eolp))
@@ -742,7 +736,7 @@ if not found, return nil."
           ;; empty comment line
           ;;   -> +3 as opening "/*"
           (unless silent (message "indent: mcomment cont'd"))
-          (lmntal--skip-comments-backward)
+          (lmntal--beginning-of-comment)
           (+ 3 (lmntal--calculate-indent t)))))
      ;; closing paren
      ((looking-at "[\s\t]*[])}]")
