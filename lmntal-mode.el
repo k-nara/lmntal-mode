@@ -70,6 +70,7 @@
 ;; 20150321 `lmntal-slimcode--help-table' を同梱
 ;; 20150327 他の LMNtal 関連プロジェクトに合わせてライセンスを変更
 ;; 20150329 `lmntal-link-name-face` のデフォルト色を白背景のテーマに対応
+;; 20150430 あるリンク名が別のリンク名の一部に含まれるときハイライトが壊れるバグを修正
 
 ;;; Code:
 
@@ -426,7 +427,7 @@ return nil if not found."
           (let ((beg (or (car info) (cadr info)))
                 (rhs (nth 3 info))
                 (limit (nth 4 info))
-                (rx (regexp-quote str)))
+                (rx (concat "\\_<" (regexp-quote str) "\\_>")))
             ;; make highlights
             (goto-char beg)
             (while (search-forward-regexp rx limit t)
