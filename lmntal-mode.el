@@ -794,7 +794,8 @@ region or whole buffer to the file."
 (defun lmntal-indent-line ()
   "indent current-line as LMNtal code"
   (interactive)
-  (indent-line-to (lmntal--calculate-indent)))
+  (save-excursion
+    (indent-line-to (lmntal--calculate-indent))))
 
 ;; the mode
 
