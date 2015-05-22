@@ -33,7 +33,7 @@
 ;; Author: Kota Nara
 ;; Maintainer: Kota Nara
 ;; URL: http://www.ueda.info.waseda.ac.jp/lmntal/
-;; Version: 20150329
+;; Version: 20150522
 
 ;;; Commentary:
 
@@ -71,7 +71,7 @@
 ;; 20150327 他の LMNtal 関連プロジェクトに合わせてライセンスを変更
 ;; 20150329 `lmntal-link-name-face` のデフォルト色を白背景のテーマに対応
 ;; 20150430 あるリンク名が別のリンク名の一部に含まれるときハイライトが壊れるバグを修正
-
+;; 20150522 ')'を打つとカーソルが行頭に移動するバグを修正
 ;;; Code:
 
 (require 'font-lock)
@@ -80,7 +80,7 @@
 (require 'electric)                 ; electric-indent, electric-layout
 (require 'cl-lib)                   ; destructuring-bind
 
-(defconst lmntal-mode-version "20150329")
+(defconst lmntal-mode-version "20150522")
 
 ;; + customs
 
