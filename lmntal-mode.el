@@ -503,7 +503,7 @@ return nil if not found."
   "make and return a temporary file. the file will be deleted
 when emacs is killed. when WITH-CONTENT is non-nil, write either
 region or whole buffer to the file."
-  (let ((file (make-temp-file "lmntal_" nil)))
+  (let ((file (make-temp-file "lmntal_" nil ".lmn")))
     (push file lmntal--temp-files)
     (when with-content
       (if (use-region-p)
@@ -523,8 +523,8 @@ region or whole buffer to the file."
   (let* ((file (lmntal--make-temp-file t))
          (default-directory lmntal-home-directory)
          (fullpath (expand-file-name lmntal-graphene-executable))
-         (jar-filename (file-name-nondirectory lmntal-graphene-executable))
-         (default-directory (file-name-directory lmntal-graphene-executable))
+         (jar-filename (file-name-nondirectory fullpath))
+         (default-directory (file-name-directory fullpath))
          (command (concat "java -jar " jar-filename " --lmntal.file " file)))
     (message command)
     (async-shell-command command)))
