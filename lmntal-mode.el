@@ -33,7 +33,7 @@
 ;; Author: Kota Nara
 ;; Maintainer: Kota Nara
 ;; URL: http://www.ueda.info.waseda.ac.jp/lmntal/
-;; Version: 20150522
+;; Version: 20150527
 
 ;;; Commentary:
 
@@ -72,6 +72,7 @@
 ;; 20150329 `lmntal-link-name-face` のデフォルト色を白背景のテーマに対応
 ;; 20150430 あるリンク名が別のリンク名の一部に含まれるときハイライトが壊れるバグを修正
 ;; 20150522 ')'を入力するとカーソルが行頭に移動するバグを修正
+;; 20150527 UNYO のサポートを打ち切り、 Graphene のサポートを追加
 
 ;;; Code:
 
@@ -81,7 +82,7 @@
 (require 'electric)                 ; electric-indent, electric-layout
 (require 'cl-lib)                   ; destructuring-bind
 
-(defconst lmntal-mode-version "20150522")
+(defconst lmntal-mode-version "20150527")
 
 ;; + customs
 
