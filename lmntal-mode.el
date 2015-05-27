@@ -528,7 +528,8 @@ region or whole buffer to the file."
          (default-directory (file-name-directory fullpath))
          (command (concat "java -jar " jar-filename " --lmntal.file " file)))
     (message command)
-    (async-shell-command command)))
+    (save-window-excursion
+      (async-shell-command command nil nil))))
 
 (defun lmntal-run-trace ()
   "run region (or buffer) as LMNtal code."
