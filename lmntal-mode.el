@@ -71,7 +71,7 @@
 ;; 20150327 他の LMNtal 関連プロジェクトに合わせてライセンスを変更
 ;; 20150329 `lmntal-link-name-face` のデフォルト色を白背景のテーマに対応
 ;; 20150430 あるリンク名が別のリンク名の一部に含まれるときハイライトが壊れるバグを修正
-;; 20150522 ')'を打つとカーソルが行頭に移動するバグを修正
+;; 20150522 ')'を入力するとカーソルが行頭に移動するバグを修正
 
 ;;; Code:
 
@@ -101,10 +101,6 @@
   "path/to/lmntal/"
   :group 'lmntal)
 
-(defcustom lmntal-unyo-directory nil
-  "path/to/unyo/"
-  :group 'lmntal)
-
 (defcustom lmntal-slim-executable "installed/bin/slim"
   "path/to/slim (can be either an absolute path or a relative
 path from \"lmntal-home-directory\")"
@@ -122,11 +118,6 @@ path from \"lmntal-home-directory\")"
   '("--nd" "-t" "--hl" "--use-builtin-rule"
     "--hide-ruleset" "--show-transition")
   "options passed to SLIM in ModelChecker-mode")
-
-(defcustom lmntal-unyo-options
-  '()
-  "options passed to unyo"
-  :group 'lmntal)
 
 (defcustom lmntal-output-window-fraction 40
   "height(%) of the output window"
@@ -149,7 +140,6 @@ path from \"lmntal-home-directory\")"
   (let ((kmap (make-sparse-keymap)))
     (define-key kmap (kbd "C-c C-c") 'lmntal-run-trace)
     (define-key kmap (kbd "C-c C-m") 'lmntal-run-mc)
-    (define-key kmap (kbd "C-c C-u") 'lmntal-run-unyo)
     (define-key kmap (kbd "C-c C-i") 'lmntal-compile-only)
     (define-key kmap [remap end-of-defun] 'lmntal-end-of-rule)
     (define-key kmap [remap beginning-of-defun] 'lmntal-beginning-of-rule)
@@ -158,10 +148,7 @@ path from \"lmntal-home-directory\")"
   :group 'lmntal)
 
 (defcustom lmntal-trace-mode-map
-  (let ((kmap (make-sparse-keymap)))
-    (define-key kmap (kbd "u") 'lmntal-run-unyo)
-    (define-key kmap (kbd "C-c C-u") 'lmntal-run-unyo)
-    kmap)
+  (make-sparse-keymap)
   "keymap for LMNtal-trace mode"
   :group 'lmntal)
 
@@ -519,23 +506,6 @@ region or whole buffer to the file."
 (add-hook 'kill-emacs-hook (lambda () (mapc 'delete-file lmntal--temp-files)))
 
 ;;   + run .lmn
-
-(defun lmntal-run-unyo ()
-  "visualize region (or buffer) as LMNtal code."
-  (interactive)
-  (when (not lmntal-unyo-directory)
-    (error "specify lmntal-unyo-directory"))
-  (let* ((file (lmntal--make-temp-file t))
-         (default-directory lmntal-unyo-directory)
-         (command
-          (concat "java"
-                  " -classpath ./unyo.jar:./lib/lmntal.jar:./lib/std_lib.jar"
-                  " -DLMNTAL_HOME=."
-                  " jp.ac.waseda.info.ueda.unyo.FrontEnd"
-                  " " (mapconcat 'identity lmntal-unyo-options " ")
-                  " " file)))
-    (message command)
-    (async-shell-command command)))
 
 (defun lmntal-run-trace ()
   "run region (or buffer) as LMNtal code."
