@@ -106,6 +106,10 @@
 path from \"lmntal-home-directory\")"
   :group 'lmntal)
 
+(defcustom lmntal-graphene-executable "graphene/graphene.jar"
+  "path/to/graphene.jar"
+  :group 'lmntal)
+
 (defcustom lmntal-compile-options
   '("--slimcode" "--hl")
   "options passed to LMNtal compiler")
@@ -141,6 +145,7 @@ path from \"lmntal-home-directory\")"
     (define-key kmap (kbd "C-c C-c") 'lmntal-run-trace)
     (define-key kmap (kbd "C-c C-m") 'lmntal-run-mc)
     (define-key kmap (kbd "C-c C-i") 'lmntal-compile-only)
+    (define-key kmap (kbd "C-c C-g") 'lmntal-run-graphene)
     (define-key kmap [remap end-of-defun] 'lmntal-end-of-rule)
     (define-key kmap [remap beginning-of-defun] 'lmntal-beginning-of-rule)
     kmap)
@@ -148,7 +153,10 @@ path from \"lmntal-home-directory\")"
   :group 'lmntal)
 
 (defcustom lmntal-trace-mode-map
-  (make-sparse-keymap)
+  (let ((kmap (make-sparse-keymap)))
+    (define-key kmap (kbd "g") 'lmntal-run-graphene)
+    (define-key kmap (kbd "C-c C-g") 'lmntal-run-graphene)
+    kmap)
   "keymap for LMNtal-trace mode"
   :group 'lmntal)
 
@@ -506,6 +514,20 @@ region or whole buffer to the file."
 (add-hook 'kill-emacs-hook (lambda () (mapc 'delete-file lmntal--temp-files)))
 
 ;;   + run .lmn
+
+(defun lmntal-run-graphene ()
+  "visualize region (or buffer) as LMNtal code."
+  (interactive)
+  (when (not lmntal-graphene-executable)
+    (error "specify lmntal-graphene-executable"))
+  (let* ((file (lmntal--make-temp-file t))
+         (default-directory lmntal-home-directory)
+         (fullpath (expand-file-name lmntal-graphene-executable))
+         (jar-filename (file-name-nondirectory lmntal-graphene-executable))
+         (default-directory (file-name-directory lmntal-graphene-executable))
+         (command (concat "java -jar " jar-filename " --lmntal.file " file)))
+    (message command)
+    (async-shell-command command)))
 
 (defun lmntal-run-trace ()
   "run region (or buffer) as LMNtal code."
