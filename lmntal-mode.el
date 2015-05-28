@@ -132,12 +132,11 @@ path from \"lmntal-home-directory\")"
   "options passed to LMNtal compiler")
 
 (defcustom lmntal-runtime-options
-  '("-t" "--hl" "--use-builtin-rule" "--hide-ruleset")
+  '("-t" "--hl" "--hide-ruleset")
   "options passed to SLIM in RunTime-mode")
 
 (defcustom lmntal-mc-options
-  '("--nd" "-t" "--hl" "--use-builtin-rule"
-    "--hide-ruleset" "--show-transition")
+  '("--nd" "-t" "--hl" "--hide-ruleset" "--show-transition")
   "options passed to SLIM in ModelChecker-mode")
 
 (defcustom lmntal-output-window-fraction 40
