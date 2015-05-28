@@ -66,21 +66,21 @@ You can also manually turn the mode on with =M-x lmntal-mode=
 
 ** Keybinds
 
-- Use =[C-M-a]= / =[C-M-e]= to jump to the beginning / end of rule
-- Use =[C-c C-c]= to run LMNtal program and see the trace
-- Use =[C-c C-m]= to run LMNtal program in non-deterministic mode
-- Use =[C-c C-i]= to compile LMNtal program to see the VM code
-- Use =[C-c C-g]= to visualize LMNtal graphs with =graphene=
+- Press =[C-M-a]= / =[C-M-e]= to jump to the beginning / end of rule
+- Press =[C-c C-c]= to run region/buffer and see the trace
+- Press =[C-c C-m]= to run region/buffer non-deterministically
+- Press =[C-c C-i]= to compile region/buffer to see the VM code
+- Press =[C-c C-g]= to visualize region/buffer with =graphene=
 
 See also: section "LMNtal installation directory".
 
 -----
 
 - =[C-M-a]= (=[C-M-e]=) でルールの先頭 (末尾) にジャンプします
-- =[C-c C-c]= で LMNtal プログラムを実行しトレースを表示します
-- =[C-c C-m]= で LMNtal プログラムを非決定モードで実行します
-- =[C-c C-i]= で LMNtal プログラムをコンパイルし中間コードを表示します
-- =[C-c C-g]= で LMNtal プログラムを =graphene= で可視化します
+- =[C-c C-c]= で選択範囲 (またはバッファ全体) を実行しトレースを表示します
+- =[C-c C-m]= で選択範囲 (またはバッファ全体) を非決定モードで実行します
+- =[C-c C-i]= で選択範囲 (またはバッファ全体) をコンパイルし中間コードを表示します
+- =[C-c C-g]= で選択範囲 (またはバッファ全体) を =graphene= で可視化します
 
 "LMNtal installation directory" の項も併せて読んでください。
 
@@ -181,3 +181,49 @@ You may optionally modify =lmntal-link-name-face= and / or
   (set-face-background 'lmntal-link-name-face "#003944")
   (set-face-foreground 'lmntal-highlight-face "#d06466")
 #+end_src
+
+* 開発者向け：
+
+** バージョンアップの方法
+
+- user-visible な変更を加えたら、ヘッダ内の =Version:=, =Change Log:=
+  とコード内の =lmntal-mode-version= をその日の日付で更新する。
+
+- 大きな機能を追加削除したら、必ず Readme を更新する。
+
+** メンテする人の権利
+
+- 積極的にメンテしている人はヘッダ内の =Maintainer:= に自分の名前を追加
+  してよい。長くメンテに関わっていない人の名前は、その時メンテを主導し
+  ている人の裁量で =Contributor:= に移動してよい。
+
+- 外部の人に自明でないバグ修正・機能追加をしていただいたら、本人の希
+  望に応じてヘッダの =Contributor:= に名前を追加する。
+
+** 気を付けてほしいマナー (人類にメンテできるコードを保つために…)
+
+- すべての変数・関数名は必ず =lmntal-= から始まるようにする。
+  - Emacs Lisp には名前空間がない (24.3 時点)
+
+- private な (ユーザーが直接呼び出すことを意図していない) 変数・関数名
+  は =lmntal--= から始めて、 private であることをわかりやすくする。
+
+- 関数・変数には必ず docstring (説明文) を付ける。
+  - 後でわからなくなったとき =M-x describe-function(variable)= でいつ
+    でもチェックできるようになる。
+
+- =defvar= (グローバル変数) を極力使わない
+  - ユーザー設定は =defcustom= で宣言できる。
+  - 定数は =defconst= で宣言できる。
+  - 関数の引数を増やすことで変数を作らずに済むことは多い。
+  - どう考えても必要な場合は、その変数の値を変更するような関数の数をな
+    るべく減らすように気を付ける。いたるところで値が変更されていて流れ
+    が追えないようなコードは人類にメンテできない。
+
+** 知ってると便利なこと
+
+  - outline モードで構造化されているので、活用すると編集しやすい。
+
+    : (outline-minor-mode 1)
+    : (setq-local outline-regexp "^[\s\t]*;;[\s]+\\+[+-]*\s")
+    : (setq-local outline-level (lambda () (- (outline-level) 4)))

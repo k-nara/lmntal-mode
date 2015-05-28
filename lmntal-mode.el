@@ -32,6 +32,7 @@
 
 ;; Author: Kota Nara
 ;; Maintainer: Kota Nara
+;; Contributor:
 ;; URL: http://www.ueda.info.waseda.ac.jp/lmntal/
 ;; Version: 20150527
 
@@ -48,37 +49,52 @@
 
 ;;; Change Log:
 
-;; 20141229 imagemagick に対応
-;; 20150318 行コメントの直後の行頭に '/' を入力するとハングする不具合を修正
-;;          '.' をルール末尾のピリオドと勘違いしてしまう不具合を修正
-;; 20141113 `lmntal-slimcode-help' コマンドを追加
-;; 20141112 `lmntal-slimcode-mode' で一行コメントを扱えるようにした
-;;          `lmntal-slimcode-mode' にも autoload を付けた
-;;          `lmntal-slimcode-mode' 用の indent-line-function を実装
-;; 20140827 実行結果でシンタックスハイライトが無効になるバグを修正
-;; 20140802 `lmntal-trace-mode' にも対応するリンク名のハイライトを追加
-;; 20140731 syntax-table を更新, comment-start-skip の設定
-;;          実行結果を読むための major-mode の名前を変更
-;;          `lmntal-beginning/end-of-rule' コマンドを追加
-;;          対応するリンク名のハイライトを実装
-;; 20140327 モデル検査の結果をGraphvizで描画できるようにした
-;;          Javaランタイムのサポートをやめた
-;;          変数名 `lmntal-lmntal-directory' を `lmntal-home-directory' に変更
-;;          `LMNTAL_HOME' を `lmntal-mode-directory' のデフォルト値として使うようにした
-;; 20150318 行コメントの直後の行頭に '/' を入力するとハングする不具合を修正
-;;          '.' をルール末尾のピリオドと勘違いしてしまう不具合を修正
-;; 20150321 `lmntal-slimcode--help-table' を同梱
-;; 20150327 他の LMNtal 関連プロジェクトに合わせてライセンスを変更
-;; 20150329 `lmntal-link-name-face` のデフォルト色を白背景のテーマに対応
-;; 20150430 あるリンク名が別のリンク名の一部に含まれるときハイライトが壊れるバグを修正
-;; 20150522 ')'を入力するとカーソルが行頭に移動するバグを修正
-;; 20150527 UNYO のサポートを打ち切り、 Graphene のサポートを追加
+;; 20141229 nara
+;; - imagemagick に対応
+;; 20150318 nara
+;; - 行コメントの直後の行頭に '/' を入力するとハングする不具合を修正
+;; - '.' をルール末尾のピリオドと勘違いしてしまう不具合を修正
+;; 20141113 nara
+;; - `lmntal-slimcode-help' コマンドを追加
+;; 20141112 nara
+;; - `lmntal-slimcode-mode' で一行コメントを扱えるようにした
+;; - `lmntal-slimcode-mode' にも autoload を付けた
+;; - `lmntal-slimcode-mode' 用の indent-line-function を実装
+;; 20140827 nara
+;; - 実行結果でシンタックスハイライトが無効になるバグを修正
+;; 20140802 nara
+;; - `lmntal-trace-mode' にも対応するリンク名のハイライトを追加
+;; 20140731 nara
+;; - syntax-table を更新, comment-start-skip の設定
+;; - 実行結果を読むための major-mode の名前を変更
+;; - `lmntal-beginning/end-of-rule' コマンドを追加
+;; - 対応するリンク名のハイライトを実装
+;; 20140327 nara
+;; - モデル検査の結果をGraphvizで描画できるようにした
+;; - Javaランタイムのサポートをやめた
+;; - 変数名 `lmntal-lmntal-directory' を `lmntal-home-directory' に変更
+;; - `LMNTAL_HOME' を `lmntal-mode-directory' のデフォルト値として使うようにした
+;; 20150318 nara
+;; - 行コメントの直後の行頭に '/' を入力するとハングする不具合を修正
+;; - '.' をルール末尾のピリオドと勘違いしてしまう不具合を修正
+;; 20150321 nara
+;; - `lmntal-slimcode--help-table' を同梱
+;; 20150327 nara
+;; - 他の LMNtal 関連プロジェクトに合わせてライセンスを変更
+;; 20150329 nara
+;; - `lmntal-link-name-face` のデフォルト色を白背景のテーマに対応
+;; 20150430 nara
+;; - あるリンク名が別のリンク名の一部に含まれるときハイライトが壊れるバグを修正
+;; 20150522 nara
+;; - ')'を入力するとカーソルが行頭に移動するバグを修正
+;; 20150527 nara
+;; - UNYO のサポートを打ち切り、 Graphene のサポートを追加
 
 ;;; Code:
 
-(require 'font-lock)
-(require 'view)
-(require 'eldoc)
+(require 'font-lock)                ; font-lock-defaults
+(require 'view)                     ; view-mode
+(require 'eldoc)                    ; eldoc-mode
 (require 'electric)                 ; electric-indent, electric-layout
 (require 'cl-lib)                   ; destructuring-bind
 
@@ -244,7 +260,7 @@ path from \"lmntal-home-directory\")"
 
 (defun lmntal--beginning-of-comment ()
   "go to the beginning of THIS comment.
-if nothing happened, return nil. otherwise return t"
+if nothing happened, return nil. otherwise return non-nil"
   (when (and (lmntal--in-comment-p) (not (bobp)))
     (while (and (not (bobp))
                 (save-excursion
@@ -255,7 +271,7 @@ if nothing happened, return nil. otherwise return t"
 
 (defun lmntal--end-of-comment ()
   "go to the end of THIS comment.
-if nothing happened, return nil. otherwise return t"
+if nothing happened, return nil. otherwise return non-nil"
   (when (and (lmntal--in-comment-p) (not (eobp)))
     (while (and (not (eobp))
                 (save-excursion
@@ -514,7 +530,7 @@ region or whole buffer to the file."
 
 (add-hook 'kill-emacs-hook (lambda () (mapc 'delete-file lmntal--temp-files)))
 
-;;   + run .lmn
+;;   + visualize .lmn
 
 (defun lmntal-run-graphene ()
   "visualize region (or buffer) as LMNtal code."
@@ -530,6 +546,8 @@ region or whole buffer to the file."
     (message command)
     (save-window-excursion
       (async-shell-command command nil nil))))
+
+;;   + run .lmn
 
 (defun lmntal-run-trace ()
   "run region (or buffer) as LMNtal code."
