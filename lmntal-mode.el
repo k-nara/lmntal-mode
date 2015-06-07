@@ -523,8 +523,8 @@ region or whole buffer to the file."
     (push file lmntal--temp-files)
     (when with-content
       (if (use-region-p)
-          (write-region (region-beginning) (region-end) file)
-        (write-region (point-min) (point-max) file)))
+          (write-region (region-beginning) (region-end) file nil 'nomsg)
+        (write-region (point-min) (point-max) file nil 'nomsg)))
     file))
 
 (add-hook 'kill-emacs-hook (lambda () (mapc 'delete-file lmntal--temp-files)))
