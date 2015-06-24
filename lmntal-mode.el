@@ -266,7 +266,14 @@ if nothing happened, return nil. otherwise return non-nil"
                   (forward-char -1)
                   (lmntal--in-comment-p)))
       (forward-char -1))
-    t))
+    t)
+  ;; *NOTE* どのみち遅かったから、そもそもアプローチが間違ってるぽい
+  ;;        magic-latex-buffer みたいにサーチしてからコメント内外判定ではダメ？
+  ;; (let ((orig-pos (point))
+  ;;       (new-pos (comment-beginning)))
+  ;;   (when new-pos (goto-char new-pos))
+  ;;   new-pos)
+  )
 
 (defun lmntal--end-of-comment ()
   "go to the end of THIS comment.
@@ -277,7 +284,14 @@ if nothing happened, return nil. otherwise return non-nil"
                   (forward-char 1)
                   (lmntal--in-comment-p)))
       (forward-char 1))
-    t))
+    t)
+  ;; (let* ((orig-pos (point))
+  ;;        (beg-pos (comment-beginning))
+  ;;        (new-pos (when beg-pos
+  ;;                   (goto-char beg-pos)
+  ;;                   (forward-comment 1))))
+  ;;   new-pos)
+  )
 
 ;;   + jumping around (for internal use)
 
@@ -807,7 +821,9 @@ region or whole buffer to the file."
   "indent current-line as LMNtal code"
   (interactive)
   (save-excursion
-    (indent-line-to (lmntal--calculate-indent))))
+    (indent-line-to (lmntal--calculate-indent)))
+  (when (looking-back "^[\s\t]*")
+    (skip-chars-forward "\s\t")))
 
 ;; the mode
 
