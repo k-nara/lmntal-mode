@@ -541,7 +541,10 @@ region or whole buffer to the file."
         (write-region (point-min) (point-max) file nil 'nomsg)))
     file))
 
-(add-hook 'kill-emacs-hook (lambda () (mapc 'delete-file lmntal--temp-files)))
+(add-hook 'kill-emacs-hook
+          (lambda ()
+            (mapc (lambda (f) (when (file-exists-p f) (delete-file f)))
+                  lmntal--temp-files)))
 
 ;;   + visualize .lmn
 
