@@ -726,7 +726,10 @@ region or whole buffer to the file."
     ("\\({\\|}[\s\t]*/?\\)" . font-lock-type-face)
     ;; lists, free-links [a, b | c]
     ("[][|]" . font-lock-variable-name-face)
-    )
+    ;; module import
+    ("\\([a-zA-Z0-9_]+\\)\\.\\(use\\)"
+     (1 'font-lock-variable-name-face)
+     (2 'font-lock-keyword-face)))
   "highlighting expressions for LMNtal mode")
 
 ;; imenu
