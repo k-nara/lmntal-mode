@@ -34,7 +34,7 @@
 ;; Maintainer: Kota Nara
 ;; Contributor:
 ;; URL: http://www.ueda.info.waseda.ac.jp/lmntal/
-;; Version: 20150527
+;; Version: 20150910
 
 ;;; Commentary:
 
@@ -49,31 +49,28 @@
 
 ;;; Change Log:
 
-;; 20141229 nara
-;; - imagemagick に対応
-;; 20150318 nara
-;; - 行コメントの直後の行頭に '/' を入力するとハングする不具合を修正
-;; - '.' をルール末尾のピリオドと勘違いしてしまう不具合を修正
-;; 20141113 nara
-;; - `lmntal-slimcode-help' コマンドを追加
-;; 20141112 nara
-;; - `lmntal-slimcode-mode' で一行コメントを扱えるようにした
-;; - `lmntal-slimcode-mode' にも autoload を付けた
-;; - `lmntal-slimcode-mode' 用の indent-line-function を実装
-;; 20140827 nara
-;; - 実行結果でシンタックスハイライトが無効になるバグを修正
-;; 20140802 nara
-;; - `lmntal-trace-mode' にも対応するリンク名のハイライトを追加
-;; 20140731 nara
-;; - syntax-table を更新, comment-start-skip の設定
-;; - 実行結果を読むための major-mode の名前を変更
-;; - `lmntal-beginning/end-of-rule' コマンドを追加
-;; - 対応するリンク名のハイライトを実装
 ;; 20140327 nara
 ;; - モデル検査の結果をGraphvizで描画できるようにした
 ;; - Javaランタイムのサポートをやめた
 ;; - 変数名 `lmntal-lmntal-directory' を `lmntal-home-directory' に変更
 ;; - `LMNTAL_HOME' を `lmntal-mode-directory' のデフォルト値として使うようにした
+;; 20140731 nara
+;; - syntax-table を更新, comment-start-skip の設定
+;; - 実行結果を読むための major-mode の名前を変更
+;; - `lmntal-beginning/end-of-rule' コマンドを追加
+;; - 対応するリンク名のハイライトを実装
+;; 20140802 nara
+;; - `lmntal-trace-mode' にも "対応するリンク名のハイライト" を実装
+;; 20140827 nara
+;; - 実行結果でシンタックスハイライトが無効になるバグを修正
+;; 20141112 nara
+;; - `lmntal-slimcode-mode' で一行コメントを扱えるようにした
+;; - `lmntal-slimcode-mode' にも autoload を付けた
+;; - `lmntal-slimcode-mode' 用の indent-line-function を実装
+;; 20141113 nara
+;; - `lmntal-slimcode-help' コマンドを追加
+;; 20141229 nara
+;; - imagemagick に対応
 ;; 20150318 nara
 ;; - 行コメントの直後の行頭に '/' を入力するとハングする不具合を修正
 ;; - '.' をルール末尾のピリオドと勘違いしてしまう不具合を修正
@@ -89,6 +86,16 @@
 ;; - ')'を入力するとカーソルが行頭に移動するバグを修正
 ;; 20150527 nara
 ;; - UNYO のサポートを打ち切り、 Graphene のサポートを追加
+;; 20150528 nara
+;; - `--use-builtin-rule' をデフォルトのオプションから外した
+;; 20150608 nara
+;; - 一時ファイルを作成するときにミニバッファにメッセージを出ないようにした
+;; 20150625 nara
+;; - `lmntal-indent-line' でカーソルを進めるようにした
+;; 20150711 nara
+;; - 存在しない一時ファイルを削除しようとするバグを修正
+;; 20150910 nara
+;; - インポート文 (module.use) のシンタックスハイライトを追加
 
 ;;; Code:
 
@@ -98,7 +105,7 @@
 (require 'electric)                 ; electric-indent, electric-layout
 (require 'cl-lib)                   ; destructuring-bind
 
-(defconst lmntal-mode-version "20150527")
+(defconst lmntal-mode-version "20150910")
 
 ;; + customs
 
